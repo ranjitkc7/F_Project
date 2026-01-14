@@ -33,6 +33,7 @@ class _ProfilePageState extends State<ProfilePage> {
         setState(() {
           userName = userDoc["name"];
           userEmail = userDoc["email"];
+          isLoading = false;
         });
       }
     }
@@ -46,8 +47,8 @@ class _ProfilePageState extends State<ProfilePage> {
           padding: EdgeInsets.zero,
           children: [
             DrawerHeader(
-              decoration: const BoxDecoration(
-                color: Color.fromARGB(255, 98, 8, 242),
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.primary,
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -59,17 +60,25 @@ class _ProfilePageState extends State<ProfilePage> {
                   const SizedBox(height: 10),
                   Text(
                     userName.isEmpty ? "Loading..." : userName,
-                    style: const TextStyle(color: Colors.white, fontSize: 18),
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.onPrimary,
+                      fontSize: 18,
+                    ),
                   ),
                   Text(
                     userEmail.isEmpty ? "Loading.." : userEmail,
-                    style: TextStyle(color: Colors.white70),
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.onPrimary,
+                    ),
                   ),
                 ],
               ),
             ),
             ListTile(
-              leading: const Icon(Icons.settings),
+              leading: Icon(
+                Icons.settings,
+                color: Theme.of(context).colorScheme.primary,
+              ),
               title: const Text("Settings"),
               onTap: () {
                 Navigator.push(
@@ -79,17 +88,23 @@ class _ProfilePageState extends State<ProfilePage> {
               },
             ),
             ListTile(
-              leading: const Icon(Icons.lock),
+              leading: Icon(
+                Icons.lock,
+                color: Theme.of(context).colorScheme.primary,
+              ),
               title: const Text("Change Password"),
               onTap: () {
                 Navigator.pop(context);
               },
             ),
             ListTile(
-              leading: const Icon(Icons.logout),
+              leading: Icon(
+                Icons.logout,
+                color: Theme.of(context).colorScheme.primary,
+              ),
               title: const Text("Logout"),
               onTap: () {
-                Navigator.push(
+                Navigator.pushReplacement(
                   context,
                   MaterialPageRoute(builder: (context) => const LoginPage()),
                 );
@@ -99,32 +114,45 @@ class _ProfilePageState extends State<ProfilePage> {
         ),
       ),
       appBar: AppBar(
-        title: const Text("Profile", style: TextStyle(color: Colors.white)),
-        backgroundColor: const Color.fromARGB(255, 98, 8, 242),
+        title: const Text("Profile"),
+        backgroundColor: Theme.of(context).colorScheme.primary,
         centerTitle: true,
-        iconTheme: const IconThemeData(color: Colors.white, size: 28),
-      ),
-      backgroundColor: const Color.fromARGB(255, 244, 236, 213),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.start,
-          children: [
-            SizedBox(height: 30),
-            CircleAvatar(
-              radius: 50,
-              backgroundImage: AssetImage("assets/images/ppp.png"),
-            ),
-            SizedBox(height: 3),
-            Text(
-              userName.isEmpty ? "Loading..." : userName,
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
-            ),
-            Text(
-              userEmail.isEmpty ? "Loading..." : userEmail,
-              style: TextStyle(fontSize: 15),
-            ),
-          ],
+        iconTheme: IconThemeData(
+          color: Theme.of(context).colorScheme.onPrimary,
+          size: 28,
         ),
+      ),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      body: Center(
+        child: isLoading
+            ? const CircularProgressIndicator()
+            : Column(
+                mainAxisAlignment: MainAxisAlignment.start,
+                children: [
+                  const SizedBox(height: 30),
+                  const CircleAvatar(
+                    radius: 50,
+                    backgroundImage: AssetImage("assets/images/ppp.png"),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    userName,
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w700,
+                      color: Theme.of(context).textTheme.bodyLarge?.color,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    userEmail,
+                    style: TextStyle(
+                      fontSize: 15,
+                      color: Theme.of(context).textTheme.bodyMedium?.color,
+                    ),
+                  ),
+                ],
+              ),
       ),
     );
   }

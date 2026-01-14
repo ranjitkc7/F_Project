@@ -1,4 +1,8 @@
+// ignore_for_file: deprecated_member_use
+
 import 'dart:io';
+import 'package:att_app/services/rollNo_service.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import '../widgets/std_form.dart';
@@ -8,7 +12,8 @@ import '../models/student_details.dart';
 import '../utils/storage.dart';
 import 'student_detailsUI.dart';
 import 'take_attendence.dart';
-
+import '../utils/image_storage.dart';
+import '../services/student_firestore_service.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -35,6 +40,7 @@ class _HomePageState extends State<HomePage> {
   String? selectedClass;
 
   File? image;
+  String searchQuery = "";
 
   final List<String> studentClass = [
     "1",
@@ -57,6 +63,100 @@ class _HomePageState extends State<HomePage> {
     loadStudents();
   }
 
+  List<StudentDetails> get studentsForSelectedClass {
+    if (selectedClass == null) return [];
+    return students
+        .where((s) => s.studentClass == selectedClass)
+        .where((s) => s.name.toLowerCase().contains(searchQuery.toLowerCase()))
+        .toList();
+  }
+
+  void showSearchDialog() {
+    showDialog(
+      context: context,
+      builder: (context) {
+        String tempQuery = searchQuery;
+        String? tempClass = selectedClass;
+
+        return Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Container(
+            height: 260,
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  "Search Students",
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  autofocus: false,
+                  decoration: const InputDecoration(
+                    hintText: "Enter student name",
+                    prefixIcon: Icon(Icons.search),
+                    border: OutlineInputBorder(),
+                  ),
+                  onChanged: (value) {
+                    tempQuery = value;
+                  },
+                ),
+                const SizedBox(height: 12),
+                DropdownButtonFormField<String>(
+                  value: tempClass,
+                  decoration: const InputDecoration(
+                    hintText: "Select Class",
+                    border: OutlineInputBorder(),
+                  ),
+                  items: studentClass
+                      .map(
+                        (cls) => DropdownMenuItem(value: cls, child: Text(cls)),
+                      )
+                      .toList(),
+                  onChanged: (value) {
+                    tempClass = value;
+                  },
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    TextButton(
+                      onPressed: () {
+                        Navigator.pop(context);
+                      },
+                      child: const Text("Cancel"),
+                    ),
+                    const SizedBox(width: 4),
+                    ElevatedButton(
+                      onPressed: () {
+                        setState(() {
+                          searchQuery = tempQuery;
+                          selectedClass = tempClass;
+                        });
+                        Navigator.pop(context);
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color.fromARGB(255, 98, 8, 242),
+                      ),
+                      child: const Text(
+                        "Search",
+                        style: TextStyle(color: Colors.white, fontSize: 15),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   Future<void> loadStudents() async {
     final loaded = await StorageUtil.getStudentDetails();
     setState(() {
@@ -77,70 +177,96 @@ class _HomePageState extends State<HomePage> {
   }
 
   Future<void> addStudent() async {
-    if (nameController.text.isEmpty ||
-        ageController.text.isEmpty ||
-        addressController.text.isEmpty ||
-        genderController.text.isEmpty ||
-        dobController.text.isEmpty ||
-        admissionDateController.text.isEmpty ||
-        classController.text.isEmpty ||
-        parentDetailsController.text.isEmpty) {
+    try {
+      if (nameController.text.isEmpty ||
+          ageController.text.isEmpty ||
+          addressController.text.isEmpty ||
+          genderController.text.isEmpty ||
+          dobController.text.isEmpty ||
+          admissionDateController.text.isEmpty ||
+          classController.text.isEmpty ||
+          parentDetailsController.text.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("Please fill all the fields"),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return;
+      }
+
+      final rollNo = await RollNoService.getNextRollNo(classController.text);
+      final docRef = FirebaseFirestore.instance.collection('students').doc();
+      final studentId = docRef.id;
+
+      String? localImagePath;
+      if (image != null) {
+        localImagePath = await LocalImageStorage.saveImage(image);
+      }
+
+      final newStudent = StudentDetails(
+        id: studentId,
+        rollNo: rollNo,
+        name: nameController.text,
+        age: ageController.text,
+        address: addressController.text,
+        gender: genderController.text,
+        dob: dobController.text,
+        admissionDate: admissionDateController.text,
+        studentClass: classController.text,
+        parentDetails: parentDetailsController.text,
+        imagePath: localImagePath,
+      );
+
+      await StorageUtil.saveStudentDetails(newStudent);
+
+      await StudentFirestoreService.addStudent(
+        id: studentId,
+        rollNo: rollNo.toString(),
+        name: nameController.text,
+        age: ageController.text,
+        address: addressController.text,
+        gender: genderController.text,
+        dob: dobController.text,
+        admissionDate: admissionDateController.text,
+        studentClass: classController.text,
+        parentDetails: parentDetailsController.text,
+        localImagePath: localImagePath,
+      );
+
+      nameController.clear();
+      ageController.clear();
+      addressController.clear();
+      genderController.clear();
+      dobController.clear();
+      admissionDateController.clear();
+      classController.clear();
+      parentDetailsController.clear();
+
+      setState(() {
+        image = null;
+        isShowAdd = false;
+      });
+
+      await loadStudents();
+
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text("Please fill all the fields"),
-          backgroundColor: Colors.red,
+          content: Text("Student added successfully!"),
+          backgroundColor: Colors.green,
         ),
       );
-      return;
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Error: $e"), backgroundColor: Colors.red),
+      );
     }
-
-    final newStudent = StudentDetails(
-      name: nameController.text,
-      age: ageController.text,
-      address: addressController.text,
-      gender: genderController.text,
-      dob: dobController.text,
-      admissionDate: admissionDateController.text,
-      studentClass: classController.text,
-      parentDetails: parentDetailsController.text,
-      imagePath: image?.path,
-    );
-
-    await StorageUtil.saveStudentDetails(newStudent);
-
-    nameController.clear();
-    ageController.clear();
-    addressController.clear();
-    genderController.clear();
-    dobController.clear();
-    admissionDateController.clear();
-    classController.clear();
-    parentDetailsController.clear();
-
-    setState(() {
-      image = null;
-      isShowAdd = false;
-    });
-
-    await loadStudents();
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text("Student added successfully!"),
-        backgroundColor: Color.fromARGB(255, 40, 246, 8),
-      ),
-    );
   }
 
   void showStudentsForClass(String classValue) {
     setState(() {
       selectedClass = classValue;
     });
-  }
-
-  List<StudentDetails> get studentsForSelectedClass {
-    if (selectedClass == null) return [];
-    return students.where((s) => s.studentClass == selectedClass).toList();
   }
 
   void _showDialog(BuildContext context, StudentDetails s) {
@@ -224,23 +350,46 @@ class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color.fromARGB(255, 244, 236, 213),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SingleChildScrollView(
         child: Column(
           children: [
             const SizedBox(height: 24),
-            Center(
-              child: SizedBox(
-                width: 160,
-                child: CustomButton(
-                  onPressed: () => setState(() => isShowAdd = !isShowAdd),
-                  radius: 12,
-                  color: const Color.fromARGB(255, 98, 8, 242),
-                  text: isShowAdd ? "Hide Form" : "Add Student",
-                ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const SizedBox(width: 60),
+                  SizedBox(
+                    width: 160,
+                    child: CustomButton(
+                      onPressed: () => setState(() => isShowAdd = !isShowAdd),
+                      radius: 12,
+                      color: const Color.fromARGB(255, 98, 8, 242),
+                      text: isShowAdd ? "Hide Form" : "Add Student",
+                    ),
+                  ),
+                  const SizedBox(width: 40),
+                  ElevatedButton(
+                    onPressed: () {
+                      showSearchDialog();
+                    },
+                    style: ElevatedButton.styleFrom(
+                      shape: const CircleBorder(),
+                      backgroundColor: Colors.white,
+                      elevation: 3,
+                      padding: const EdgeInsets.all(7),
+                    ),
+                    child: const Icon(
+                      Icons.search,
+                      color: Color.fromARGB(255, 98, 8, 242),
+                      size: 24,
+                    ),
+                  ),
+                ],
               ),
             ),
-
             isShowAdd
                 ? Container(
                     margin: const EdgeInsets.all(10),
@@ -251,8 +400,8 @@ class _HomePageState extends State<HomePage> {
                       color: const Color.fromARGB(255, 244, 236, 213),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.grey.shade400,
-                          blurRadius: 6,
+                          color: const Color.fromARGB(255, 248, 235, 235),
+                          blurRadius: 2,
                           spreadRadius: 2,
                           offset: const Offset(0, 3),
                         ),
@@ -480,22 +629,24 @@ class _HomePageState extends State<HomePage> {
                       text: "Take Attendance",
                       color: const Color.fromARGB(255, 98, 8, 242),
                       onPressed: () {
-                        if(selectedClass == null){
+                        if (selectedClass == null) {
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
                               content: Text("Please select a class"),
                               backgroundColor: Colors.red,
-                            )
+                            ),
                           );
                           return;
                         }
-                        final classStudents = students.where((s) => s.studentClass == selectedClass).toList();
-                        if(classStudents.isEmpty){
-                           ScaffoldMessenger.of(context).showSnackBar(
+                        final classStudents = students
+                            .where((s) => s.studentClass == selectedClass)
+                            .toList();
+                        if (classStudents.isEmpty) {
+                          ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
                               content: Text("No students in this class"),
                               backgroundColor: Colors.red,
-                            )
+                            ),
                           );
                           return;
                         }

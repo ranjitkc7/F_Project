@@ -1,5 +1,6 @@
 // ignore_for_file: deprecated_member_use
 
+import 'package:att_app/services/attendance_firebaseService.dart';
 import 'package:att_app/widgets/button.dart';
 import 'package:flutter/material.dart';
 import '../models/student_details.dart';
@@ -238,19 +239,31 @@ class _StudentAttendancePageState extends State<StudentAttendancePage> {
                                   11,
                                 ),
                                 isActive: tempStatus[index] == "P",
-                                onTap: () {
+                                onTap: () async {
+                                  final success =
+                                      await AttendanceFirebaseService.makeAttendance(
+                                        className: widget.studentClass,
+                                        studentId: student.id,
+                                        studentName: student.name,
+                                        rollNo: student.rollNo,
+                                        status: "P",
+                                        month: selectedMonth,
+                                      );
+                                  if (!success) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text(
+                                          "Attendance already marked for today",
+                                        ),
+                                        backgroundColor: Colors.red,
+                                      ),
+                                    );
+                                    return;
+                                  }
                                   setState(() {
                                     totalAttendance[index] += 1;
                                     tempStatus[index] = "P";
                                   });
-                                  Future.delayed(
-                                    const Duration(minutes: 1),
-                                    () {
-                                      setState(() {
-                                        tempStatus[index] = null;
-                                      });
-                                    },
-                                  );
                                 },
                               ),
                               const SizedBox(width: 12),
@@ -263,19 +276,30 @@ class _StudentAttendancePageState extends State<StudentAttendancePage> {
                                   6,
                                 ),
                                 isActive: tempStatus[index] == "A",
-                                onTap: () {
+                                onTap: () async {
+                                  final success =
+                                      await AttendanceFirebaseService.makeAttendance(
+                                        className: widget.studentClass,
+                                        studentId: student.id,
+                                        studentName: student.name,
+                                        rollNo: student.rollNo,
+                                        status: "A",
+                                        month: selectedMonth,
+                                      );
+                                  if (!success) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text(
+                                          "Attendance already marked for today",
+                                        ),
+                                        backgroundColor: Colors.red,
+                                      ),
+                                    );
+                                    return;
+                                  }
                                   setState(() {
                                     tempStatus[index] = "A";
                                   });
-
-                                  Future.delayed(
-                                    const Duration(minutes: 1),
-                                    () {
-                                      setState(() {
-                                        tempStatus[index] = null;
-                                      });
-                                    },
-                                  );
                                 },
                               ),
                             ],

@@ -1,6 +1,8 @@
 class StudentDetails {
   String? imagePath;
   String name;
+  String id;
+  int rollNo;
   String age;
   String gender;
   String address;
@@ -12,6 +14,8 @@ class StudentDetails {
   StudentDetails({
     this.imagePath,
     required this.name,
+    required this.id,
+    required this.rollNo,
     required this.age,
     required this.gender,
     required this.address,
@@ -25,6 +29,8 @@ class StudentDetails {
     'imagePath': imagePath, // NULL SAFE
     'name': name,
     'age': age,
+    'id':id,
+    "rollNo": rollNo,
     'gender': gender,
     'address': address,
     'dob': dob,
@@ -37,6 +43,8 @@ class StudentDetails {
     return StudentDetails(
       imagePath: json['imagePath'] == null ? null : json['imagePath'] as String,
       name: json['name'] ?? '',
+      id: json['id'] ?? '',
+      rollNo: json['rollNo'] ?? '',
       age: json['age'] ?? '',
       gender: json['gender'] ?? '',
       address: json['address'] ?? '',

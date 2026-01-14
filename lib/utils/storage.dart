@@ -60,12 +60,21 @@ class StorageUtil {
         .map((e) => StudentDetails.fromJson(e))
         .toList();
 
-    students.removeWhere(
+    final toRemove = students.firstWhere(
       (s) =>
           s.name == student.name &&
           s.dob == student.dob &&
           s.studentClass == student.studentClass,
     );
+
+    if (toRemove.imagePath != null && toRemove.imagePath!.isNotEmpty) {
+      final imageFile = File(toRemove.imagePath!);
+      if (await imageFile.exists()) {
+        await imageFile.delete();
+      }
+    }
+
+    students.remove(toRemove);
 
     await file.writeAsString(
       jsonEncode(students.map((s) => s.toJson()).toList()),
