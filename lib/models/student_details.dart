@@ -26,10 +26,10 @@ class StudentDetails {
   });
 
   Map<String, dynamic> toJson() => {
-    'imagePath': imagePath, // NULL SAFE
+    'imagePath': imagePath,
     'name': name,
     'age': age,
-    'id':id,
+    'id': id,
     "rollNo": rollNo,
     'gender': gender,
     'address': address,
@@ -44,7 +44,9 @@ class StudentDetails {
       imagePath: json['imagePath'] == null ? null : json['imagePath'] as String,
       name: json['name'] ?? '',
       id: json['id'] ?? '',
-      rollNo: json['rollNo'] ?? '',
+      rollNo: json['rollNo'] is int
+        ? json['rollNo']
+        : int.tryParse(json['rollNo']?.toString() ?? '0') ?? 0,
       age: json['age'] ?? '',
       gender: json['gender'] ?? '',
       address: json['address'] ?? '',

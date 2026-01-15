@@ -42,14 +42,29 @@ class _StudentAttendancePageState extends State<StudentAttendancePage> {
     "Chaitra",
   ];
 
-  late List<String?> tempStatus; // allow null
+  late List<String?> tempStatus;
   late List<int> totalAttendance;
+
+  Future<void> loadTotalAttendance() async {
+    for (int i = 0; i < widget.students.length; i++) {
+      final student = widget.students[i];
+      final count = await AttendanceFirebaseService.getAttendanceCount(
+        className: widget.studentClass,
+        studentId: student.id,
+        month: selectedMonth,
+      );
+      totalAttendance[i] = count;
+    }
+    setState(() {});
+  }
 
   @override
   void initState() {
     super.initState();
     tempStatus = List<String?>.filled(widget.students.length, null);
     totalAttendance = List<int>.filled(widget.students.length, 0);
+
+    loadTotalAttendance();
   }
 
   void showAttendanceDialog({
