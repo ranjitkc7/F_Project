@@ -45,8 +45,8 @@ class StudentDetails {
       name: json['name'] ?? '',
       id: json['id'] ?? '',
       rollNo: json['rollNo'] is int
-        ? json['rollNo']
-        : int.tryParse(json['rollNo']?.toString() ?? '0') ?? 0,
+          ? json['rollNo']
+          : int.tryParse(json['rollNo']?.toString() ?? '0') ?? 0,
       age: json['age'] ?? '',
       gender: json['gender'] ?? '',
       address: json['address'] ?? '',
@@ -54,6 +54,33 @@ class StudentDetails {
       admissionDate: json['admissionDate'] ?? '',
       studentClass: json['studentClass'] ?? '',
       parentDetails: json['parentDetails'] ?? '',
+    );
+  }
+  StudentDetails copyWith({
+    String? imagePath,
+    String? name,
+    String? id,
+    int? rollNo,
+    String? age,
+    String? gender,
+    String? address,
+    String? dob,
+    String? admissionDate,
+    String? studentClass,
+    String? parentDetails,
+  }) {
+    return StudentDetails(
+      imagePath: imagePath ?? this.imagePath,
+      name: name ?? this.name,
+      id: id ?? this.id,
+      rollNo: rollNo ?? this.rollNo,
+      age: age ?? this.age,
+      gender: gender ?? this.gender,
+      address: address ?? this.address,
+      dob: dob ?? this.dob,
+      admissionDate: admissionDate ?? this.admissionDate,
+      studentClass: studentClass ?? this.studentClass,
+      parentDetails: parentDetails ?? this.parentDetails,
     );
   }
 }

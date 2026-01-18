@@ -60,12 +60,7 @@ class StorageUtil {
         .map((e) => StudentDetails.fromJson(e))
         .toList();
 
-    final toRemove = students.firstWhere(
-      (s) =>
-          s.name == student.name &&
-          s.dob == student.dob &&
-          s.studentClass == student.studentClass,
-    );
+    final toRemove = students.firstWhere((s) => s.id == student.id);
 
     if (toRemove.imagePath != null && toRemove.imagePath!.isNotEmpty) {
       final imageFile = File(toRemove.imagePath!);
@@ -75,6 +70,30 @@ class StorageUtil {
     }
 
     students.remove(toRemove);
+
+    await file.writeAsString(
+      jsonEncode(students.map((s) => s.toJson()).toList()),
+    );
+  }
+
+  static Future<void> updateStudentDetails(
+    StudentDetails updatedStudent,
+  ) async {
+    final file = await _localFile;
+
+    String content = await file.readAsString();
+    if (content.isEmpty) return;
+
+    List jsonData = jsonDecode(content);
+    List<StudentDetails> students = jsonData
+        .map((e) => StudentDetails.fromJson(e))
+        .toList();
+
+    final index = students.indexWhere((s) => s.id == updatedStudent.id);
+
+    if (index == -1) return;
+
+    students[index] = updatedStudent;
 
     await file.writeAsString(
       jsonEncode(students.map((s) => s.toJson()).toList()),
