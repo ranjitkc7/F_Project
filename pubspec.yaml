@@ -1,6 +1,6 @@
 name: att_app
 description: A new Flutter project.
-publish_to: 'none'
+publish_to: "none"
 
 version: 1.0.0+1
 
@@ -21,6 +21,7 @@ dependencies:
   nepali_date_picker: ^7.0.1
   qr_flutter: ^4.1.0
   mobile_scanner: ^7.1.4
+  google_sign_in: ^6.2.1
 
 dev_dependencies:
   flutter_test:

@@ -1,5 +1,6 @@
 import 'package:att_app/screens/login_page.dart';
 import 'package:att_app/screens/setting_page.dart';
+import 'package:att_app/services/goole_auth_service.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -15,6 +16,7 @@ class _ProfilePageState extends State<ProfilePage> {
   String userName = " ";
   String userEmail = " ";
   bool isLoading = true;
+  String userImage = "";
 
   @override
   void initState() {
@@ -23,16 +25,75 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   Future<void> fetchUserData() async {
-    User? user = FirebaseAuth.instance.currentUser;
-    if (user != null) {
-      DocumentSnapshot userDoc = await FirebaseFirestore.instance
-          .collection("users")
-          .doc(user.uid)
-          .get();
-      if (userDoc.exists) {
+  User? user = FirebaseAuth.instance.currentUser;
+
+  if (user == null) {
+    setState(() {
+      userName = "Guest";
+      userEmail = "";
+      userImage = "";
+      isLoading = false;
+    });
+    return;
+  }
+
+  try {
+    final doc = await FirebaseFirestore.instance
+        .collection("users")
+        .doc(user.uid)
+        .get();
+
+    setState(() {
+      userName = doc.data()?['name'] ??
+          user.displayName ??
+          "No Name";
+
+      userEmail = doc.data()?['email'] ??
+          user.email ??
+          "No Email";
+
+      userImage = doc.data()?['image'] ??
+          user.photoURL ??
+          "";
+
+      isLoading = false;
+    });
+  } catch (e) {
+    setState(() {
+      userName = user.displayName ?? "No Name";
+      userEmail = user.email ?? "No Email";
+      userImage = user.photoURL ?? "";
+      isLoading = false;
+    });
+  }
+}
+
+
+  Future<void> handleLogout() async {
+    setState(() {
+      isLoading = true;
+    });
+
+    try {
+      await FirebaseAuth.instance.signOut();
+
+      await AuthService.logout();
+
+      if (!mounted) return;
+
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(builder: (_) => const LoginPage()),
+        (route) => false,
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text("Logout failed: $e")));
+    } finally {
+      if (mounted) {
         setState(() {
-          userName = userDoc["name"];
-          userEmail = userDoc["email"];
           isLoading = false;
         });
       }
@@ -53,9 +114,11 @@ class _ProfilePageState extends State<ProfilePage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const CircleAvatar(
+                  CircleAvatar(
                     radius: 30,
-                    backgroundImage: AssetImage("assets/images/ppp.png"),
+                    backgroundImage: userImage.isNotEmpty
+                        ? NetworkImage(userImage)
+                        : AssetImage("assets/images/ppp.png") as ImageProvider,
                   ),
                   const SizedBox(height: 10),
                   Text(
@@ -103,18 +166,13 @@ class _ProfilePageState extends State<ProfilePage> {
                 color: Theme.of(context).colorScheme.primary,
               ),
               title: const Text("Logout"),
-              onTap: () {
-                Navigator.pushReplacement(
-                  context,
-                  MaterialPageRoute(builder: (context) => const LoginPage()),
-                );
-              },
+              onTap: handleLogout,
             ),
           ],
         ),
       ),
       appBar: AppBar(
-        title: const Text("Profile"),
+        title: const Text("Profile", style: TextStyle(color:Colors.white)),
         backgroundColor: Theme.of(context).colorScheme.primary,
         centerTitle: true,
         iconTheme: IconThemeData(
@@ -130,9 +188,12 @@ class _ProfilePageState extends State<ProfilePage> {
                 mainAxisAlignment: MainAxisAlignment.start,
                 children: [
                   const SizedBox(height: 30),
-                  const CircleAvatar(
+                  CircleAvatar(
                     radius: 50,
-                    backgroundImage: AssetImage("assets/images/ppp.png"),
+                    backgroundImage: userImage.isNotEmpty
+                        ? NetworkImage(userImage)
+                        : const AssetImage("assets/images/ppp.png")
+                              as ImageProvider,
                   ),
                   const SizedBox(height: 8),
                   Text(

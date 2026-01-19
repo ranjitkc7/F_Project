@@ -40,6 +40,7 @@ class _SignUpPageState extends State<SignUpPage> {
       await FirebaseFirestore.instance.collection("users").doc(user.uid).set({
         "name": nameController.text.trim(),
         "email": emailController.text.trim(),
+        "image" : "",
         "isVerified": false,
         "createdAt": FieldValue.serverTimestamp(),
       });

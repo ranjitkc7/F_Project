@@ -3,6 +3,7 @@
 import 'dart:io';
 import 'package:att_app/screens/update_student_page.dart';
 import 'package:att_app/services/rollNo_service.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'student_qr.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
@@ -169,10 +170,29 @@ class _HomePageState extends State<HomePage> {
   }
 
   Future<void> loadStudents() async {
-    final loaded = await StorageUtil.getStudentDetails();
-    setState(() {
-      students = loaded;
-    });
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    try {
+      final firestoreStudents = await StudentFirestoreService.fetchStudents(
+        user.uid,
+      );
+
+      if (!mounted) return;
+
+      setState(() {
+        students = firestoreStudents;
+      });
+    } catch (e) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text("Failed to load students: $e"),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 
   Future<void> pickImage() async {
@@ -228,12 +248,12 @@ class _HomePageState extends State<HomePage> {
         parentDetails: parentDetailsController.text,
         imagePath: localImagePath,
       );
-
-      await StorageUtil.saveStudentDetails(newStudent);
+      final userId = FirebaseAuth.instance.currentUser!.uid;
 
       await StudentFirestoreService.addStudent(
+        userId: userId,
         id: studentId,
-        rollNo: rollNo.toString(),
+        rollNo: rollNo,
         name: nameController.text,
         age: ageController.text,
         address: addressController.text,
@@ -364,7 +384,7 @@ class _HomePageState extends State<HomePage> {
     await StorageUtil.deleteStudentDetails(student);
 
     setState(() {
-      students.remove(student);
+      students.removeWhere((s) => s.id == student.id);
     });
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
